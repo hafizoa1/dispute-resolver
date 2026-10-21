@@ -22,7 +22,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 // Uses the same local PostgreSQL configuration as the application; no mocks,
 // matching the case-view and webhook integration tests' approach.
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+// app.moniepoint.business-id is set because the new update test also calls GET .../case,
+// which fails closed (503) without a configured business - same requirement CaseService
+// already has, this class just never needed it until now.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "app.moniepoint.business-id=123")
 class EvidenceObservationIntegrationTests {
 
     private final HttpClient client = HttpClient.newHttpClient();
@@ -54,6 +58,12 @@ class EvidenceObservationIntegrationTests {
 
         assertThat(body.get("observationText").asString()).isEqualTo("Corrected observation.");
         assertThat(body.get("documentedTransactionReference").asString()).isEqualTo("RST-B");
+
+        // Persistence and retrieval together, not just the PUT response: a separate GET
+        // against /case (the same response ReviewService consumes) must see the update too.
+        JsonNode evidenceInCase = findEvidence(getCase(evidence.getDispute().getId()), evidence.getId());
+        assertThat(evidenceInCase.get("observationText").asString()).isEqualTo("Corrected observation.");
+        assertThat(evidenceInCase.get("documentedTransactionReference").asString()).isEqualTo("RST-B");
     }
 
     @Test
@@ -132,6 +142,24 @@ class EvidenceObservationIntegrationTests {
         HttpResponse<String> response = send(disputeId, evidenceId, text, reference);
         assertThat(response.statusCode()).isEqualTo(200);
         return mapper.readTree(response.body());
+    }
+
+    private JsonNode getCase(UUID disputeId) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(
+                        URI.create("http://localhost:" + port + "/api/disputes/" + disputeId + "/case"))
+                .GET().build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        assertThat(response.statusCode()).isEqualTo(200);
+        return mapper.readTree(response.body());
+    }
+
+    private JsonNode findEvidence(JsonNode caseResponse, UUID evidenceId) {
+        for (JsonNode evidence : caseResponse.get("evidence")) {
+            if (evidence.get("id").asString().equals(evidenceId.toString())) {
+                return evidence;
+            }
+        }
+        throw new AssertionError("Evidence " + evidenceId + " not found in case response");
     }
 
     private HttpResponse<String> send(UUID disputeId, UUID evidenceId, String text, String reference)
