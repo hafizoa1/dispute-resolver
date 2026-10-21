@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.hafiz.disputeresolver.exception.DisputeNotFoundException;
+import com.hafiz.disputeresolver.exception.EvidenceNotFoundException;
 import com.hafiz.disputeresolver.moniepoint.WebhookException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleDisputeNotFound(DisputeNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Dispute not found");
+        return problem;
+    }
+
+    @ExceptionHandler(EvidenceNotFoundException.class)
+    public ProblemDetail handleEvidenceNotFound(EvidenceNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Evidence not found");
         return problem;
     }
 

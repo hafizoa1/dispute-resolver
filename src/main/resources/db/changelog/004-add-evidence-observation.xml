@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <!-- Nullable: existing evidence can remain without an observation.
+         Required-when-saving is enforced at the request-validation layer
+         (SaveObservationRequest), not here - same precedent as every other
+         enum/status-shaped column in this schema having no DB-level CHECK. -->
+    <changeSet id="004-add-evidence-observation" author="hafiz">
+        <addColumn tableName="evidence">
+            <column name="observation_text" type="TEXT"/>
+            <column name="documented_transaction_reference" type="TEXT"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -43,6 +43,15 @@ public class Evidence {
     @Column(nullable = false, updatable = false)
     private Instant uploadedAt;
 
+    // Merchant-provided, not extracted or verified - what the merchant says this
+    // evidence shows, and which transaction reference they're asserting it documents.
+    // Both nullable: existing evidence can remain without one.
+    @Column(columnDefinition = "text")
+    private String observationText;
+
+    @Column(columnDefinition = "text")
+    private String documentedTransactionReference;
+
     public Evidence(UUID id, Dispute dispute, String fileName, String contentType, long sizeBytes,
             String description) {
         this.id = id;
@@ -51,5 +60,10 @@ public class Evidence {
         this.contentType = contentType;
         this.sizeBytes = sizeBytes;
         this.description = description;
+    }
+
+    public void recordObservation(String observationText, String documentedTransactionReference) {
+        this.observationText = observationText;
+        this.documentedTransactionReference = documentedTransactionReference;
     }
 }

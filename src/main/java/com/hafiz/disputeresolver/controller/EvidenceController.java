@@ -4,13 +4,17 @@ import java.util.List;
 import java.util.UUID;
 
 import com.hafiz.disputeresolver.dto.EvidenceResponse;
+import com.hafiz.disputeresolver.dto.SaveObservationRequest;
 import com.hafiz.disputeresolver.service.EvidenceService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -34,5 +38,11 @@ public class EvidenceController {
     @GetMapping
     public List<EvidenceResponse> list(@PathVariable UUID disputeId) {
         return evidenceService.listForDispute(disputeId);
+    }
+
+    @PutMapping("/{evidenceId}/observation")
+    public EvidenceResponse saveObservation(@PathVariable UUID disputeId, @PathVariable UUID evidenceId,
+            @Valid @RequestBody SaveObservationRequest request) {
+        return evidenceService.saveObservation(disputeId, evidenceId, request);
     }
 }

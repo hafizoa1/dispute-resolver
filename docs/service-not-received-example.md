@@ -59,7 +59,17 @@ curl -s -X POST localhost:8080/api/disputes/<id>/evidence \
 
 # 4. Inspect the aggregate
 curl -s localhost:8080/api/disputes/<id>/case
+
+# 5. Save each evidence item's observation (see "Evidence records" below for the
+#    exact text/reference used for each - PUT is idempotent, safe to rerun)
+curl -s -X PUT localhost:8080/api/disputes/<id>/evidence/<evidenceId>/observation \
+  -H 'Content-Type: application/json' \
+  -d '{"observationText":"...","documentedTransactionReference":"RST-20261015-0077"}'
 ```
+
+The four observations below aren't just proposed text - they've been saved through this
+exact endpoint against the ids quoted throughout this document, and confirmed back via
+both the evidence list and `GET .../case`.
 
 ## The disputed transaction
 

@@ -8,6 +8,8 @@ import java.util.List;
 import java.util.UUID;
 
 import com.hafiz.disputeresolver.dto.EvidenceResponse;
+import com.hafiz.disputeresolver.dto.SaveObservationRequest;
+import com.hafiz.disputeresolver.exception.EvidenceNotFoundException;
 import com.hafiz.disputeresolver.model.Dispute;
 import com.hafiz.disputeresolver.model.Evidence;
 import com.hafiz.disputeresolver.repository.EvidenceRepository;
@@ -53,5 +55,17 @@ public class EvidenceService {
         return evidenceRepository.findByDisputeIdOrderByUploadedAtAsc(disputeId).stream()
                 .map(EvidenceResponse::from)
                 .toList();
+    }
+
+    @Transactional
+    public EvidenceResponse saveObservation(UUID disputeId, UUID evidenceId, SaveObservationRequest request) {
+        disputeService.findDispute(disputeId);
+        // "Belongs to a different dispute" and "doesn't exist" collapse into the same
+        // 404 - never confirms evidence exists on a dispute the caller didn't name.
+        Evidence evidence = evidenceRepository.findById(evidenceId)
+                .filter(found -> found.getDispute().getId().equals(disputeId))
+                .orElseThrow(() -> new EvidenceNotFoundException(evidenceId));
+        evidence.recordObservation(request.observationText(), request.documentedTransactionReference());
+        return EvidenceResponse.from(evidenceRepository.saveAndFlush(evidence));
     }
 }

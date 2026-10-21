@@ -8,5 +8,6 @@
     <include file="db/changelog/001-create-disputes-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/002-create-evidence-table.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/003-create-moniepoint-purchase-events.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/004-add-evidence-observation.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>
