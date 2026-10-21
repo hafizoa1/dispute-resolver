@@ -1,0 +1,18 @@
+[SYNTHETIC / FICTIONAL DOCUMENT - not a real transaction]
+
+The Riverside Bistro - Table Management System
+Order record export
+
+Reference: RST-20261015-0077
+Table: 14
+Covers: 2
+Seated: 2026-10-15 19:40
+Order sent to kitchen: 2026-10-15 19:48
+Course 1 fired: 19:48 (mains)
+Course 1 served: 20:02
+Dessert ordered: 20:35
+Dessert served: 20:44
+Table closed / bill requested: 20:58
+Table cleared: 21:05
+
+Server: C. Adeyemi (staff id 2291)

@@ -18,14 +18,69 @@ Lagos, on 15 October 2026, claiming the service was not received. The merchant d
 this and wants to submit a defence. Naira, deliberately — Moniepoint is a Nigerian
 provider, and the merchants actually taking payment through it charge in NGN, not GBP.
 
+## Reproducing this fixture
+
+The four source attachments are committed alongside this document, in
+`docs/fixtures/service-not-received-example/`. The record ids quoted throughout this
+document are from one specific run — **rerunning the commands below generates new ids**,
+since nothing here is seeded or fixed; capture the new ids from each response if you
+rerun it. With the app running locally (`DB_URL`/`DB_USERNAME`/`DB_PASSWORD` or the
+defaults in `application.properties`, `MONIEPOINT_WEBHOOK_SECRET`/`MONIEPOINT_BUSINESS_ID`
+set, same as the main README):
+
+```bash
+# 1. Create the dispute
+curl -s -X POST localhost:8080/api/disputes -H 'Content-Type: application/json' \
+  -d '{"transactionReference":"RST-20261015-0077","amountMinor":7950000,"currency":"NGN",
+       "description":"Cardholder disputes charge for dinner at The Riverside Bistro on 15 Oct 2026, claims service was not received."}'
+# -> note the returned "id"
+
+# 2. Ingest the matching purchase event through the real signed webhook path
+python3 scripts/send_moniepoint_sample.py \
+  --webhook-id fixture-restaurant-ngn-1 \
+  --transaction-reference RST-20261015-0077 \
+  --merchant-reference table-14-20261015 \
+  --amount 7950000 \
+  --transaction-status APPROVED
+
+# 3. Attach the four committed source records (replace <id> with the dispute id from step 1)
+curl -s -X POST localhost:8080/api/disputes/<id>/evidence \
+  -F "file=@docs/fixtures/service-not-received-example/bill.txt" \
+  -F "description=Itemized bill/receipt for the meal, matching the disputed transaction reference"
+curl -s -X POST localhost:8080/api/disputes/<id>/evidence \
+  -F "file=@docs/fixtures/service-not-received-example/order-record.txt" \
+  -F "description=Venue's own dated table/order record for the same reference and date"
+curl -s -X POST localhost:8080/api/disputes/<id>/evidence \
+  -F "file=@docs/fixtures/service-not-received-example/booking-confirmation-email.txt" \
+  -F "description=Booking confirmation email sent to the customer ahead of the visit"
+curl -s -X POST localhost:8080/api/disputes/<id>/evidence \
+  -F "file=@docs/fixtures/service-not-received-example/post-visit-message.txt" \
+  -F "description=Customer's own message after the visit"
+
+# 4. Inspect the aggregate
+curl -s localhost:8080/api/disputes/<id>/case
+```
+
 ## The disputed transaction
 
 - Dispute id: `97f3bf47-cfb2-44a5-936d-b96110ae1a38`
 - Transaction reference: `RST-20261015-0077`
-- Disputed amount: NGN 79,500.00 (`amountMinor: 7950000`)
+- Disputed amount: NGN 79,500.00 (`amountMinor: 7950000`) — this figure is **our own
+  system's field**, set directly when the dispute was created, and its currency/units are
+  confirmed by construction.
 - Matching Moniepoint purchase event id: `c04061d9-99bf-43f2-bb12-4c27f25838cd` —
   `transactionStatus: APPROVED`, `amountRaw: 7950000`, `merchantReference: table-14-20261015`.
   One event only; no conflicting history.
+
+**Amount/currency caveat, not glossed over**: `amountRaw` is the provider's own raw
+reported figure, and per the webhook PR's own README, its unit/currency meaning is
+**unconfirmed** — nothing has verified against a real Moniepoint event that `7950000`
+means "kobo," let alone that it means naira at all. This fixture's `amountRaw: 7950000`
+was chosen to *numerically equal* the dispute's own `amountMinor` so the two line up
+cleanly for this worked example — that equality is a **synthetic fixture assumption**,
+not a confirmed fact about what Moniepoint actually reports. A real draft must not
+silently present a provider's raw amount as a confirmed currency figure; the defence
+statement below is phrased to keep that distinction visible.
 
 **Reconciliation note, stated explicitly rather than assumed**: the itemized bill below
 sums to NGN 70,500.00 + 12.5% service charge = NGN 79,312.50, not NGN 79,500.00. The
@@ -67,8 +122,14 @@ for any record type, receipt included).
 - **What the application has checked**: same as above — file stored, merchant-labeled.
   Nothing about the order-system export's authenticity is verified by the application.
 - **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0077`):
-  "Our table system's own record of this booking being seated, served, and the table
-  cleared — not just a reservation, an actual service record."
+  "Our table system's own record of this booking: table 14, party of 2, seated 19:40,
+  mains fired 19:48 and served 20:02, dessert served 20:44, table cleared 21:05 — not
+  just a reservation, an actual service record with specific times." *(Deliberately
+  spelled out in full here, not just asserted in general terms: the defence statement
+  below quotes these exact details, and a template assembling that statement from
+  observation text plus `documentedTransactionReference` can only reproduce facts that
+  are actually present in the observation. A vaguer observation would mean a vaguer, less
+  useful statement — not a more detailed one the system invented on its own.)*
 
 ### 3. Booking confirmation email (`5254a3f7-a27f-4dc2-a1a2-646f61f29eea`)
 
@@ -112,10 +173,15 @@ for any record type, receipt included).
 Phrased the way the primary source phrases its own examples — a factual claim plus what
 backs it — not an invented stronger claim:
 
-1. "The provider reported this transaction (`RST-20261015-0077`) as `APPROVED` for NGN
-   79,500.00, with no conflicting event history." — backed by purchase event
-   `c04061d9-99bf-43f2-bb12-4c27f25838cd`. *(States only what was reported — not, on its
-   own, proof of service delivery — per the plan's payment-language correction.)*
+1. "The provider reported this transaction (`RST-20261015-0077`) as `APPROVED`, with a
+   reported amount matching the disputed amount under this fixture's assumed unit
+   interpretation, and no conflicting event history." — backed by purchase event
+   `c04061d9-99bf-43f2-bb12-4c27f25838cd`. *(States only what was reported, and is
+   explicit that the amount match relies on an assumed unit interpretation, not a
+   confirmed one — not, on its own, proof of service delivery — per the plan's
+   payment-language correction and the amount/currency caveat above. A real draft would
+   need this interpretation actually confirmed before stating a currency figure this
+   plainly.)*
 2. "The merchant's table system recorded a seated party of 2 at table 14 for this
    reference, from 19:40 to 21:05, with courses fired and served." — backed by evidence
    `e439b654-1c0d-49c6-9618-250718cf4bad`.
@@ -158,3 +224,13 @@ but the draft shouldn't manufacture a claim it doesn't support.
   both ended up supporting delivery more directly than the booking confirmation, but
   because of what each one specifically says, not because of what kind of document each
   one is.
+- A real inconsistency surfaced and got fixed during this exercise, not just in review
+  after the fact: the first draft of the table/order observation was a general summary
+  ("seated, served, table cleared"), while its defence statement quoted specific details
+  (table number, covers, exact times) that weren't actually present in that observation
+  text. A template can only assemble a statement from what's actually in the observation
+  plus `documentedTransactionReference` — it can't add specificity the merchant never
+  typed. The fix was enriching the observation to actually contain those details, not
+  vaguing down the statement; the general lesson is that **every defence statement's
+  claimed specifics must be checked against the observation text that's supposed to
+  produce it**, record by record, not assumed to line up.

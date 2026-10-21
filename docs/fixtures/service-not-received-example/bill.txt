@@ -1,0 +1,27 @@
+[SYNTHETIC / FICTIONAL DOCUMENT - not a real transaction]
+
+The Riverside Bistro
+14 Marina Road, Victoria Island, Lagos
+
+Bill / Receipt
+
+Date: 15 October 2026
+Time: 19:52
+Table: 14
+Covers: 2
+Reference: RST-20261015-0077
+
+1x Seabass main          18,000.00
+1x Ribeye steak           26,000.00
+2x House red (glass)      16,000.00
+1x Sticky toffee pudding   7,500.00
+1x Espresso                3,000.00
+---------------------------------
+Subtotal                  70,500.00
+Service charge (12.5%)      8,812.50
+Card processing                 n/a
+---------------------------------
+Total                      79,312.50 NGN (rounded: 79,500.00 on card slip)
+
+Paid in full by card at table.
+Card reference: RST-20261015-0077

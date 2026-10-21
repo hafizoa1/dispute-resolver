@@ -1,0 +1,15 @@
+[SYNTHETIC / FICTIONAL DOCUMENT - not a real transaction]
+
+From: bookings@riversidebistro.example
+To: a.customer@example.com
+Subject: Your table is confirmed - The Riverside Bistro, 15 Oct, 19:40
+Date: 2026-10-10
+
+Hi,
+
+This confirms your table for 2 at The Riverside Bistro on Thursday 15
+October at 19:40. Reference RST-20261015-0077.
+
+We look forward to seeing you.
+
+The Riverside Bistro

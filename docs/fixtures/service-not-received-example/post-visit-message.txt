@@ -1,0 +1,15 @@
+[SYNTHETIC / FICTIONAL DOCUMENT - not a real transaction]
+
+From: a.customer@example.com
+To: bookings@riversidebistro.example
+Subject: Re: Your table is confirmed - The Riverside Bistro, 15 Oct, 19:40
+Date: 2026-10-16
+
+Hi,
+
+Thanks for having us last night, the steak was excellent and the
+service was great. Could you let the kitchen know we loved the
+sticky toffee pudding too.
+
+Thanks,
+A

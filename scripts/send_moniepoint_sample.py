@@ -18,7 +18,9 @@ def main():
                         help="Repeat the same ID to check deduplication")
     parser.add_argument("--transaction-reference", default="synthetic-txn-1")
     parser.add_argument("--merchant-reference", default="synthetic-booking-1")
-    parser.add_argument("--amount", type=int, default=5000000, help="Minor units, no currency/unit conversion done")
+    parser.add_argument("--amount", type=int, default=5000000,
+                        help="Raw provider amount, as Moniepoint's own webhook reports it - "
+                             "its unit/currency meaning is unconfirmed, not assumed to be minor units")
     parser.add_argument("--transaction-status", default="APPROVED")
     parser.add_argument("--tamper", action="store_true", help="Change the amount after signing; expect 401")
     args = parser.parse_args()
