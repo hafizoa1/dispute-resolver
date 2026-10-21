@@ -178,34 +178,64 @@ for any record type, receipt included).
   positively — read together with the order record, this supports the visit happened as
   billed."
 
-## Proposed defence statements
+## Expected review/draft output (quoted format — the real PR 2 acceptance target)
 
-Phrased the way the primary source phrases its own examples — a factual claim plus what
-backs it — not an invented stronger claim:
+This replaces an earlier draft of this section that paraphrased each observation into a
+new sentence (e.g. "The merchant's table system recorded a seated party of 2..."). That
+was a mistake worth naming, not just quietly fixing: a deterministic template must not
+freely rewrite merchant prose into new factual claims. What follows is what
+`GET /api/disputes/{id}/review`'s `draftText` should actually produce from this fixture —
+observations quoted verbatim, reference match checked structurally (a plain comparison
+against `Dispute.transactionReference`, nothing inferred from content), and an explicit,
+unconditional statement of what this review does and doesn't establish.
 
-1. "The provider reported this transaction (`RST-20261015-0077`) as `APPROVED`, with a
-   reported amount matching the disputed amount under this fixture's assumed unit
-   interpretation, and no conflicting event history." — backed by purchase event
-   `c04061d9-99bf-43f2-bb12-4c27f25838cd`. *(States only what was reported, and is
-   explicit that the amount match relies on an assumed unit interpretation, not a
-   confirmed one — not, on its own, proof of service delivery — per the plan's
-   payment-language correction and the amount/currency caveat above. A real draft would
-   need this interpretation actually confirmed before stating a currency figure this
-   plainly.)*
-2. "The merchant's table system recorded a seated party of 2 at table 14 for this
-   reference, from 19:40 to 21:05, with courses fired and served." — backed by evidence
-   `e439b654-1c0d-49c6-9618-250718cf4bad`.
-3. "The bill issued for this reference and date, reconciled for card rounding, matches
-   the disputed amount." — backed by evidence `74433221-6762-422a-9049-09f01b5489eb`.
-4. "The cardholder's own message the day after the visit describes specific dishes
-   matching the bill and describes the service positively." — backed by evidence
-   `92e8ea08-6273-4b23-8b1c-f0184eeea54e`, **with the thread-association caveat from
-   record 4 stated alongside it, not omitted**.
+```
+DEFENCE REVIEW - RST-20261015-0077
+This review checks completeness and declared consistency only. It does not assess
+document contents or establish that the service was delivered. No gaps found below
+does not mean this defence is strong or ready to submit.
 
-The booking confirmation (record 3) does **not** get its own numbered defence statement —
-on its own content, it only establishes a reservation existed, which isn't in dispute and
-doesn't address "service not received." It's still part of the evidence index as context,
-but the draft shouldn't manufacture a claim it doesn't support.
+PAYMENT HISTORY
+Provider-reported transaction RST-20261015-0077: status APPROVED. Reported amount
+7950000 (raw provider figure - currency/unit interpretation not confirmed). One event,
+no conflicting history.
+
+EVIDENCE
+1. bill.txt (documented reference: RST-20261015-0077 - MATCHES dispute reference)
+   Merchant states: "This is the bill for the disputed booking, reference and date
+   both match, total reconciles to the card charge once the rounding to 79,500.00 is
+   accounted for."
+
+2. order-record.txt (documented reference: RST-20261015-0077 - MATCHES dispute reference)
+   Merchant states: "Our table system's own record of this booking: table 14, party of
+   2, seated 19:40, mains fired 19:48 and served 20:02, dessert served 20:44, table
+   cleared 21:05 - not just a reservation, an actual service record with specific
+   times."
+
+3. booking-confirmation-email.txt (documented reference: RST-20261015-0077 - MATCHES
+   dispute reference)
+   Merchant states: "Confirms the booking was made for this reference and date.
+   Doesn't on its own confirm the visit happened - see the order record and
+   post-visit message for that."
+
+4. post-visit-message.txt (documented reference: RST-20261015-0077 - MATCHES dispute
+   reference)
+   Merchant states: "Customer's own message the day after, referencing dishes from the
+   bill (steak, sticky toffee pudding) and describing the service positively - read
+   together with the order record, this supports the visit happened as billed."
+
+GAPS
+None found: every attached evidence item has an observation, and every declared
+reference matches the dispute's own transaction reference.
+```
+
+Notably, the booking confirmation (evidence 3) still appears — quoted plainly, including
+its own hedge ("Doesn't on its own confirm the visit happened"). The earlier paraphrased
+version deliberately left it out of the numbered statements because *a person* judged its
+content as weaker. A template can't make that judgment — it can only quote what's there
+and check the reference, so every observed, correctly-referenced item appears, and any
+actual weakness has to be visible in the merchant's own words, not filtered out by the
+system on the merchant's behalf.
 
 ## What stays explicitly unknown
 
@@ -254,3 +284,13 @@ but the draft shouldn't manufacture a claim it doesn't support.
   contradiction here would undermine the defence it's supposed to support. A genuinely
   unexplained timing conflict is still a useful thing to test — but as a deliberate
   adversarial variant later, not an accident sitting in the baseline case.
+- A third correction, this time to the document's own expected-output section rather
+  than the fixture: the original "Proposed defence statements" paraphrased every
+  observation into new prose and quietly dropped the booking confirmation as "too weak"
+  — both judgment calls only a person can make, not something a deterministic template
+  can do. Replaced with the quoted format above: verbatim observations, structural
+  reference-match checks only, and every observed/correctly-referenced item included,
+  weak ones and all. The lesson generalizes past this fixture: anywhere this document
+  described what the *system* should produce, it needs to describe only what's
+  mechanically derivable from stored fields — never what a careful human reader would
+  conclude from the prose.
