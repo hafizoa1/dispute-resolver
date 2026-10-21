@@ -16,6 +16,10 @@ def main():
     parser.add_argument("--url", default="http://localhost:8080/api/webhooks/moniepoint")
     parser.add_argument("--webhook-id", default="synthetic-purchase-1",
                         help="Repeat the same ID to check deduplication")
+    parser.add_argument("--transaction-reference", default="synthetic-txn-1")
+    parser.add_argument("--merchant-reference", default="synthetic-booking-1")
+    parser.add_argument("--amount", type=int, default=5000000, help="Minor units, no currency/unit conversion done")
+    parser.add_argument("--transaction-status", default="APPROVED")
     parser.add_argument("--tamper", action="store_true", help="Change the amount after signing; expect 401")
     args = parser.parse_args()
     secret = os.environ.get("MONIEPOINT_WEBHOOK_SECRET", "")
@@ -29,10 +33,10 @@ def main():
         "eventType": "V1_POS_PURCHASE_TRANSACTION",
         "data": {
             "businessId": int(business_id),
-            "amount": 5000000,
-            "transactionReference": "synthetic-txn-1",
-            "merchantReference": "synthetic-booking-1",
-            "transactionStatus": "APPROVED",
+            "amount": args.amount,
+            "transactionReference": args.transaction_reference,
+            "merchantReference": args.merchant_reference,
+            "transactionStatus": args.transaction_status,
             "responseCode": "00",
         },
     }
@@ -41,7 +45,7 @@ def main():
     signed = (args.webhook_id + "__" + timestamp + "__").encode() + body
     signature = base64.b64encode(hmac.new(secret.encode(), signed, hashlib.sha256).digest()).decode()
     if args.tamper:
-        body = body.replace(b"5000000", b"9000000")
+        body = body.replace(str(args.amount).encode(), str(args.amount + 4000000).encode())
     request = urllib.request.Request(args.url, data=body, method="POST", headers={
         "Content-Type": "application/json",
         "moniepoint-webhook-id": args.webhook_id,
