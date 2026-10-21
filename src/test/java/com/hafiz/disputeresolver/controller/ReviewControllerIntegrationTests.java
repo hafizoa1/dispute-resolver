@@ -118,6 +118,24 @@ class ReviewControllerIntegrationTests {
     }
 
     @Test
+    void duplicateFilenamesStayDisambiguatedByIdInDraftText() throws Exception {
+        Dispute dispute = createDispute("review-test-duplicate-filename-ref");
+        insertEvent("review-test-dup-1", dispute.getTransactionReference(), "booking-1", 5000);
+        Evidence first = createObservedEvidence(dispute, "receipt.pdf", "First receipt - the correct one.",
+                dispute.getTransactionReference());
+        Evidence second = createEvidence(dispute, "receipt.pdf");
+
+        JsonNode body = getReview(dispute.getId());
+        String draftText = body.get("draftText").asString();
+
+        // Same filename twice is exactly the ambiguous case: the draft must still let a
+        // reader tell the two apart by id, and the payment event's own id must also appear.
+        assertThat(draftText).contains(first.getId().toString());
+        assertThat(draftText).contains(second.getId().toString());
+        assertThat(draftText).contains(body.get("paymentEvents").get(0).get("id").asString());
+    }
+
+    @Test
     void noGapsStillCarriesTheScopeDisclaimer() throws Exception {
         Dispute dispute = createDispute("review-test-clean-ref");
         insertEvent("review-test-clean-1", dispute.getTransactionReference(), "booking-1", 5000);

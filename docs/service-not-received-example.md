@@ -184,42 +184,45 @@ This replaces an earlier draft of this section that paraphrased each observation
 new sentence (e.g. "The merchant's table system recorded a seated party of 2..."). That
 was a mistake worth naming, not just quietly fixing: a deterministic template must not
 freely rewrite merchant prose into new factual claims. What follows is what
-`GET /api/disputes/{id}/review`'s `draftText` should actually produce from this fixture —
+`GET /api/disputes/{id}/review`'s `draftText` actually produces from this fixture —
 observations quoted verbatim, reference match checked structurally (a plain comparison
-against `Dispute.transactionReference`, nothing inferred from content), and an explicit,
-unconditional statement of what this review does and doesn't establish.
+against `Dispute.transactionReference`, nothing inferred from content), an explicit,
+unconditional statement of what this review does and doesn't establish, and every
+payment event/evidence item tagged with its own id — filenames alone aren't unique (two
+uploads can share a name), so the id is what actually disambiguates a citation. This is
+copied verbatim from a real local run, not hand-typed:
 
 ```
 DEFENCE REVIEW - RST-20261015-0077
 This review checks completeness and declared consistency only. It does not assess
-document contents or establish that the service was delivered. No gaps found below
-does not mean this defence is strong or ready to submit.
+document contents or establish that the service was delivered. No gaps found does not
+mean this defence is strong or ready to submit.
 
 PAYMENT HISTORY
-Provider-reported transaction RST-20261015-0077: status APPROVED. Reported amount
-7950000 (raw provider figure - currency/unit interpretation not confirmed). One event,
-no conflicting history.
+Provider-reported transaction RST-20261015-0077: 1 event recorded.
+- [event c04061d9-99bf-43f2-bb12-4c27f25838cd] status APPROVED, reported amount
+  7950000 (raw provider figure, currency/unit interpretation not confirmed), received
+  2026-10-21T20:38:00.383341Z
 
 EVIDENCE
-1. bill.txt (documented reference: RST-20261015-0077 - MATCHES dispute reference)
+1. bill.txt [evidence 74433221-6762-422a-9049-09f01b5489eb] (documented reference:
+   RST-20261015-0077 - MATCHES dispute reference)
    Merchant states: "This is the bill for the disputed booking, reference and date
    both match, total reconciles to the card charge once the rounding to 79,500.00 is
    accounted for."
-
-2. order-record.txt (documented reference: RST-20261015-0077 - MATCHES dispute reference)
+2. order-record.txt [evidence e439b654-1c0d-49c6-9618-250718cf4bad] (documented
+   reference: RST-20261015-0077 - MATCHES dispute reference)
    Merchant states: "Our table system's own record of this booking: table 14, party of
    2, seated 19:40, mains fired 19:48 and served 20:02, dessert served 20:44, table
    cleared 21:05 - not just a reservation, an actual service record with specific
    times."
-
-3. booking-confirmation-email.txt (documented reference: RST-20261015-0077 - MATCHES
-   dispute reference)
+3. booking-confirmation-email.txt [evidence 5254a3f7-a27f-4dc2-a1a2-646f61f29eea]
+   (documented reference: RST-20261015-0077 - MATCHES dispute reference)
    Merchant states: "Confirms the booking was made for this reference and date.
    Doesn't on its own confirm the visit happened - see the order record and
    post-visit message for that."
-
-4. post-visit-message.txt (documented reference: RST-20261015-0077 - MATCHES dispute
-   reference)
+4. post-visit-message.txt [evidence 92e8ea08-6273-4b23-8b1c-f0184eeea54e] (documented
+   reference: RST-20261015-0077 - MATCHES dispute reference)
    Merchant states: "Customer's own message the day after, referencing dishes from the
    bill (steak, sticky toffee pudding) and describing the service positively - read
    together with the order record, this supports the visit happened as billed."

@@ -102,7 +102,7 @@ public class ReviewService {
             }
             text.append(".\n");
             for (PaymentEventSummary event : events) {
-                text.append("- status ").append(event.transactionStatus())
+                text.append("- [event ").append(event.id()).append("] status ").append(event.transactionStatus())
                         .append(", reported amount ").append(event.amountRaw())
                         .append(" (raw provider figure, currency/unit interpretation not confirmed)")
                         .append(", received ").append(event.receivedAt()).append('\n');
@@ -125,6 +125,7 @@ public class ReviewService {
                     referenceStatus = "DOES NOT MATCH dispute reference";
                 }
                 text.append(index++).append(". ").append(citation.fileName())
+                        .append(" [evidence ").append(citation.evidenceId()).append(']')
                         .append(" (documented reference: ")
                         .append(citation.documentedTransactionReference() == null
                                 ? "none" : citation.documentedTransactionReference())
@@ -146,7 +147,8 @@ public class ReviewService {
             for (ReviewGap gap : gaps) {
                 text.append("- ").append(gap.message());
                 if (gap.evidenceId() != null) {
-                    text.append(" (").append(fileNamesById.get(gap.evidenceId())).append(')');
+                    text.append(" (").append(fileNamesById.get(gap.evidenceId()))
+                            .append(" [evidence ").append(gap.evidenceId()).append("])");
                 }
                 text.append('\n');
             }
