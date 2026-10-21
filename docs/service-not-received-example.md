@@ -234,3 +234,13 @@ but the draft shouldn't manufacture a claim it doesn't support.
   vaguing down the statement; the general lesson is that **every defence statement's
   claimed specifics must be checked against the observation text that's supposed to
   produce it**, record by record, not assumed to line up.
+- A second real inconsistency was caught after the fact: the bill was originally
+  timestamped 19:52 and listed dessert as paid, but the order record shows dessert wasn't
+  ordered until 20:35 — the bill claimed to be settled 43 minutes before the item it
+  billed for was even ordered. Fixed by moving the bill's time to 20:58, matching the
+  order record's own "table closed / bill requested: 20:58." For *this* fixture — the
+  baseline supported-defence example — internal timing has to actually hang together
+  across every record, the same way the amount reconciliation above does; an unexplained
+  contradiction here would undermine the defence it's supposed to support. A genuinely
+  unexplained timing conflict is still a useful thing to test — but as a deliberate
+  adversarial variant later, not an accident sitting in the baseline case.
