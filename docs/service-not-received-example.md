@@ -13,25 +13,26 @@ pp. 152–154.
 
 ## The scenario
 
-A cardholder disputes a card payment of **GBP 82.50** made at The Riverside Bistro on
-15 October 2026, claiming the service was not received. The merchant disputes this and
-wants to submit a defence.
+A cardholder disputes a card payment of **NGN 79,500.00** made at The Riverside Bistro,
+Lagos, on 15 October 2026, claiming the service was not received. The merchant disputes
+this and wants to submit a defence. Naira, deliberately — Moniepoint is a Nigerian
+provider, and the merchants actually taking payment through it charge in NGN, not GBP.
 
 ## The disputed transaction
 
-- Dispute id: `144e5ecd-c200-4a32-b644-4213487b911c`
-- Transaction reference: `RST-20261015-0042`
-- Disputed amount: GBP 82.50 (`amountMinor: 8250`)
-- Matching Moniepoint purchase event id: `697995b1-d4de-4d2d-85b3-3d9c6b1016c5` —
-  `transactionStatus: APPROVED`, `amountRaw: 8250`, `merchantReference: table-14-20261015`.
+- Dispute id: `97f3bf47-cfb2-44a5-936d-b96110ae1a38`
+- Transaction reference: `RST-20261015-0077`
+- Disputed amount: NGN 79,500.00 (`amountMinor: 7950000`)
+- Matching Moniepoint purchase event id: `c04061d9-99bf-43f2-bb12-4c27f25838cd` —
+  `transactionStatus: APPROVED`, `amountRaw: 7950000`, `merchantReference: table-14-20261015`.
   One event only; no conflicting history.
 
 **Reconciliation note, stated explicitly rather than assumed**: the itemized bill below
-sums to GBP 73.00 + 12.5% service charge = GBP 82.13, not GBP 82.50. The bill itself
-records "rounded: 82.50 on card slip" — that's what connects the itemized total to the
-actual disputed amount. Without that one line, the bill and the disputed transaction
-would look like a near-miss, not a match. This is exactly the kind of connection the
-system can't infer on its own; it has to be read and stated by a person.
+sums to NGN 70,500.00 + 12.5% service charge = NGN 79,312.50, not NGN 79,500.00. The
+bill itself records "rounded: 79,500.00 on card slip" — that's what connects the itemized
+total to the actual disputed amount. Without that one line, the bill and the disputed
+transaction would look like a near-miss, not a match. This is exactly the kind of
+connection the system can't infer on its own; it has to be read and stated by a person.
 
 ## Evidence records
 
@@ -40,9 +41,9 @@ it could establish based on its actual content, and what the application has act
 checked (today: that a file was stored, and a human-entered observation — nothing more,
 for any record type, receipt included).
 
-### 1. Bill / receipt (`2a471c0e-8e2d-4817-8f6e-4dfd7757bade`, `bill.txt`)
+### 1. Bill / receipt (`74433221-6762-422a-9049-09f01b5489eb`, `bill.txt`)
 
-- **Connection to this transaction**: states reference `RST-20261015-0042` directly, same
+- **Connection to this transaction**: states reference `RST-20261015-0077` directly, same
   date (15 Oct 2026), and reconciles to the disputed amount via the rounding note above.
 - **What it could establish**: that a bill for this reference was issued and marked paid
   in full by card at the table. It is *not* a signed proof-of-delivery in the literal
@@ -52,11 +53,11 @@ for any record type, receipt included).
 - **What the application has checked**: a file was stored under this dispute, labeled by
   the merchant as "Itemized bill/receipt for the meal, matching the disputed transaction
   reference." The reference match above is a human reading the file, not a system check.
-- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0042`):
+- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0077`):
   "This is the bill for the disputed booking, reference and date both match, total
-  reconciles to the card charge once the rounding to 82.50 is accounted for."
+  reconciles to the card charge once the rounding to 79,500.00 is accounted for."
 
-### 2. Table/order record (`0622f348-4a10-4c94-a66b-ea487e2cd738`, `order-record.txt`)
+### 2. Table/order record (`e439b654-1c0d-49c6-9618-250718cf4bad`, `order-record.txt`)
 
 - **Connection to this transaction**: states the same reference, table 14, same date.
 - **What it could establish**: that the venue's own system recorded a seated party of 2
@@ -65,11 +66,11 @@ for any record type, receipt included).
   "documentation that the services were provided."
 - **What the application has checked**: same as above — file stored, merchant-labeled.
   Nothing about the order-system export's authenticity is verified by the application.
-- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0042`):
+- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0077`):
   "Our table system's own record of this booking being seated, served, and the table
   cleared — not just a reservation, an actual service record."
 
-### 3. Booking confirmation email (`604db13c-1461-475c-be8d-d5d15f4e0ad2`)
+### 3. Booking confirmation email (`5254a3f7-a27f-4dc2-a1a2-646f61f29eea`)
 
 - **Connection to this transaction**: states the same reference and date, sent to the
   cardholder ahead of the visit.
@@ -81,11 +82,11 @@ for any record type, receipt included).
   something different — the assessment is of content, not category.)
 - **What the application has checked**: file stored, merchant-labeled. Identical
   verification level to every other record here.
-- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0042`):
+- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0077`):
   "Confirms the booking was made for this reference and date. Doesn't on its own confirm
   the visit happened — see the order record and post-visit message for that."
 
-### 4. Post-visit message (`e09764f4-018c-4e20-9b85-acaabdb6f749`)
+### 4. Post-visit message (`92e8ea08-6273-4b23-8b1c-f0184eeea54e`)
 
 - **Connection to this transaction**: a reply on the same email thread as the booking
   confirmation (same reference by association, not restated in the message body itself —
@@ -98,7 +99,7 @@ for any record type, receipt included).
   precisely because of what it says, not because "correspondence" as a category changed.
 - **What the application has checked**: file stored, merchant-labeled. Same as every
   other record.
-- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0042` —
+- **Merchant-provided observation** (`documentedTransactionReference: RST-20261015-0077` —
   **flagged, not just filled in**: the reference isn't restated inside this message; the
   merchant is asserting the thread association, which is itself an unverified claim worth
   surfacing, not quietly assumed): "Customer's own message the day after, referencing
@@ -111,18 +112,18 @@ for any record type, receipt included).
 Phrased the way the primary source phrases its own examples — a factual claim plus what
 backs it — not an invented stronger claim:
 
-1. "The provider reported this transaction (`RST-20261015-0042`) as `APPROVED` for GBP
-   82.50, with no conflicting event history." — backed by purchase event
-   `697995b1-d4de-4d2d-85b3-3d9c6b1016c5`. *(States only what was reported — not, on its
+1. "The provider reported this transaction (`RST-20261015-0077`) as `APPROVED` for NGN
+   79,500.00, with no conflicting event history." — backed by purchase event
+   `c04061d9-99bf-43f2-bb12-4c27f25838cd`. *(States only what was reported — not, on its
    own, proof of service delivery — per the plan's payment-language correction.)*
 2. "The merchant's table system recorded a seated party of 2 at table 14 for this
    reference, from 19:40 to 21:05, with courses fired and served." — backed by evidence
-   `0622f348-4a10-4c94-a66b-ea487e2cd738`.
+   `e439b654-1c0d-49c6-9618-250718cf4bad`.
 3. "The bill issued for this reference and date, reconciled for card rounding, matches
-   the disputed amount." — backed by evidence `2a471c0e-8e2d-4817-8f6e-4dfd7757bade`.
+   the disputed amount." — backed by evidence `74433221-6762-422a-9049-09f01b5489eb`.
 4. "The cardholder's own message the day after the visit describes specific dishes
    matching the bill and describes the service positively." — backed by evidence
-   `e09764f4-018c-4e20-9b85-acaabdb6f749`, **with the thread-association caveat from
+   `92e8ea08-6273-4b23-8b1c-f0184eeea54e`, **with the thread-association caveat from
    record 4 stated alongside it, not omitted**.
 
 The booking confirmation (record 3) does **not** get its own numbered defence statement —
