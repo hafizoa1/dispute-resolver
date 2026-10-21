@@ -94,7 +94,9 @@ class ReviewControllerIntegrationTests {
         assertThat(gaps).hasSize(1);
         assertThat(gaps.get(0).get("message").asString())
                 .isEqualTo("Documented transaction reference does not match the dispute's reference.");
-        assertThat(body.get("draftText").asString()).contains("DOES NOT MATCH dispute reference");
+        String draftText = body.get("draftText").asString();
+        assertThat(draftText).contains("DOES NOT MATCH dispute reference");
+        assertNoUnsupportedDeliveryClaims(draftText);
     }
 
     @Test
@@ -114,7 +116,46 @@ class ReviewControllerIntegrationTests {
             }
         }
         assertThat(hasConflictGap).isTrue();
-        assertThat(body.get("draftText").asString()).contains("CONFLICTING");
+        String draftText = body.get("draftText").asString();
+        assertThat(draftText).contains("CONFLICTING");
+        // Both conflicting events must be shown, not just one picked as "the" status.
+        assertThat(draftText).contains("5000");
+        assertThat(draftText).contains("9000");
+        assertNoUnsupportedDeliveryClaims(draftText);
+    }
+
+    @Test
+    void missingEvidenceIsVisibleAndDraftMakesNoUnsupportedClaims() throws Exception {
+        Dispute dispute = createDispute("review-test-no-evidence-ref");
+        insertEvent("review-test-no-evidence-1", dispute.getTransactionReference(), "booking-1", 5000);
+        // Deliberately no evidence attached at all.
+
+        JsonNode body = getReview(dispute.getId());
+
+        assertThat(body.get("evidenceCitations")).isEmpty();
+        JsonNode gaps = body.get("gaps");
+        assertThat(gaps).hasSize(1);
+        assertThat(gaps.get(0).get("message").asString()).isEqualTo("No evidence has been attached to this dispute.");
+        assertThat(gaps.get(0).get("evidenceId").isNull()).isTrue();
+
+        String draftText = body.get("draftText").asString();
+        assertThat(draftText).contains("No evidence has been attached to this dispute.");
+        assertNoUnsupportedDeliveryClaims(draftText);
+    }
+
+    // The template's own fixed wording must never affirmatively claim delivery, proof, or
+    // strength - chosen to avoid any substring collision with the scope disclaimer's own
+    // (negated) phrasing, which is present on every response and does contain words like
+    // "delivered"/"strong"/"ready to submit" inside a sentence that explicitly says the
+    // opposite.
+    private void assertNoUnsupportedDeliveryClaims(String draftText) {
+        assertThat(draftText.toLowerCase()).doesNotContain("this proves")
+                .doesNotContain("this confirms")
+                .doesNotContain("clearly establishes")
+                .doesNotContain("service has been confirmed")
+                .doesNotContain("delivery is confirmed")
+                .doesNotContain("proves delivery")
+                .doesNotContain("confirms delivery");
     }
 
     @Test
