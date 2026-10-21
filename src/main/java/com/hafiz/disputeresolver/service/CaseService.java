@@ -56,7 +56,10 @@ public class CaseService {
     // A conflict is two events disagreeing on a field they both actually have a
     // value for. amount_raw is NOT NULL in the schema, so it's always a known-vs-
     // known comparison; merchant_reference is nullable, so a missing value on
-    // either side is unknown and never counted as a mismatch.
+    // either side is unknown and never counted as a mismatch - and the webhook's
+    // own field parsing (MoniepointWebhookService.optionalText) only returns null
+    // for an absent/JSON-null field, not for an explicit "", so blank counts as
+    // unknown too, not just null.
     private boolean hasConflict(List<MoniepointPurchaseEventRecord> events) {
         for (int i = 0; i < events.size(); i++) {
             for (int j = i + 1; j < events.size(); j++) {
@@ -74,6 +77,10 @@ public class CaseService {
         }
         String merchantRefA = a.getMerchantReference();
         String merchantRefB = b.getMerchantReference();
-        return merchantRefA != null && merchantRefB != null && !merchantRefA.equals(merchantRefB);
+        return isKnown(merchantRefA) && isKnown(merchantRefB) && !merchantRefA.equals(merchantRefB);
+    }
+
+    private boolean isKnown(String value) {
+        return value != null && !value.isBlank();
     }
 }

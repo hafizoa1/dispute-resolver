@@ -85,6 +85,18 @@ class CaseControllerIntegrationTests {
     }
 
     @Test
+    void blankMerchantReferenceIsUnknownNotAConflict() throws Exception {
+        Dispute dispute = createDispute("case-test-blank-ref");
+        insertEvent("case-test-b1", 123, dispute.getTransactionReference(), "", 5000, "PENDING");
+        insertEvent("case-test-b2", 123, dispute.getTransactionReference(), "booking-123", 5000, "APPROVED");
+
+        JsonNode body = getCase(dispute.getId());
+
+        assertThat(body.get("paymentEvents")).hasSize(2);
+        assertThat(body.get("paymentEventConflict").asBoolean()).isFalse();
+    }
+
+    @Test
     void eventsUnderAnotherBusinessAreExcluded() throws Exception {
         Dispute dispute = createDispute("case-test-cross-business-ref");
         insertEvent("case-test-x1", 456, dispute.getTransactionReference(), "booking-1", 5000, "APPROVED");
