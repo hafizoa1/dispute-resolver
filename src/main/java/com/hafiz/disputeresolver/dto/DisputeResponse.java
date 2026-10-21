@@ -1,0 +1,17 @@
+package com.hafiz.disputeresolver.dto;
+
+import java.time.Instant;
+import java.util.UUID;
+
+import com.hafiz.disputeresolver.model.Dispute;
+import com.hafiz.disputeresolver.model.DisputeStatus;
+
+public record DisputeResponse(UUID id, String transactionReference, Long amountMinor, String currency,
+        String description, DisputeStatus status, Instant createdAt, Instant updatedAt) {
+
+    public static DisputeResponse from(Dispute dispute) {
+        return new DisputeResponse(dispute.getId(), dispute.getTransactionReference(), dispute.getAmountMinor(),
+                dispute.getCurrency(), dispute.getDescription(), dispute.getStatus(), dispute.getCreatedAt(),
+                dispute.getUpdatedAt());
+    }
+}
