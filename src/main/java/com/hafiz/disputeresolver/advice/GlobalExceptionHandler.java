@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import com.hafiz.disputeresolver.exception.DisputeNotFoundException;
+import com.hafiz.disputeresolver.moniepoint.WebhookException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -23,6 +24,11 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(WebhookException.class)
+    public ProblemDetail handleWebhook(WebhookException ex) {
+        return ProblemDetail.forStatusAndDetail(ex.getStatus(), ex.getMessage());
+    }
 
     @ExceptionHandler(DisputeNotFoundException.class)
     public ProblemDetail handleDisputeNotFound(DisputeNotFoundException ex) {

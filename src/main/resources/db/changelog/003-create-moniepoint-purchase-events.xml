@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                   xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+                   http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+    <changeSet id="003-create-moniepoint-purchase-events" author="hafiz">
+        <createTable tableName="moniepoint_purchase_events">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="webhook_id" type="TEXT"><constraints nullable="false" unique="true"
+                    uniqueConstraintName="uk_moniepoint_purchase_webhook"/></column>
+            <column name="provider_event_id" type="TEXT"/>
+            <column name="business_id" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="transaction_reference" type="TEXT"/>
+            <column name="merchant_reference" type="TEXT"/>
+            <column name="amount_raw" type="BIGINT"><constraints nullable="false"/></column>
+            <column name="transaction_status" type="TEXT"/>
+            <column name="response_code" type="TEXT"/>
+            <column name="raw_payload" type="TEXT"><constraints nullable="false"/></column>
+            <column name="payload_sha256" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="received_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+    </changeSet>
+</databaseChangeLog>
