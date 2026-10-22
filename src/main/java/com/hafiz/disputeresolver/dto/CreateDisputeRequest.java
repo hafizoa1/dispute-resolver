@@ -12,7 +12,7 @@ public record CreateDisputeRequest(
         @NotNull @Positive Long amountMinor,
         @NotNull @Pattern(regexp = "[A-Z]{3}", message = "must be a 3-letter ISO 4217 code, e.g. GBP") String currency,
         @NotBlank String description,
-        String providerDisputeReference,
-        String customerClaim,
+        @Pattern(regexp = "(?s).*\\S.*", message = "must not be blank") String providerDisputeReference,
+        @Pattern(regexp = "(?s).*\\S.*", message = "must not be blank") String customerClaim,
         Instant responseDueAt) {
 }

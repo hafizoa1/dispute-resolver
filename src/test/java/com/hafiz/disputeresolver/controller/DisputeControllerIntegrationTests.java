@@ -80,6 +80,26 @@ class DisputeControllerIntegrationTests {
     }
 
     @Test
+    void blankProviderDisputeReferenceOnCreateIsRejected() throws Exception {
+        HttpResponse<String> response = send(postRequest("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture", "providerDisputeReference": ""}
+                """.formatted(newReference())));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void blankCustomerClaimOnCreateIsRejected() throws Exception {
+        HttpResponse<String> response = send(postRequest("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture", "customerClaim": "   "}
+                """.formatted(newReference())));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+    }
+
+    @Test
     void updateSetsProviderCaseDetailsAndPersistsThroughASeparateGet() throws Exception {
         UUID id = idOf(create("""
                 {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
