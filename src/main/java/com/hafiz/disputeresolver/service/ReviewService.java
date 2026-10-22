@@ -1,5 +1,6 @@
 package com.hafiz.disputeresolver.service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +89,15 @@ public class ReviewService {
         StringBuilder text = new StringBuilder();
 
         text.append("DEFENCE REVIEW - ").append(reference).append('\n');
+        String customerClaim = caseResponse.dispute().customerClaim();
+        text.append("Customer claim: ")
+                .append(customerClaim == null ? "not recorded." : '"' + customerClaim + '"')
+                .append('\n');
+        Instant responseDueAt = caseResponse.dispute().responseDueAt();
+        text.append("Response due: ")
+                .append(responseDueAt == null ? "not recorded - no deadline has been supplied by the provider."
+                        : responseDueAt.toString())
+                .append('\n');
         text.append(SCOPE_DISCLAIMER).append("\n\n");
 
         text.append("PAYMENT HISTORY\n");

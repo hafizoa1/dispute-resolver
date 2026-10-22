@@ -48,6 +48,14 @@ public class Dispute {
     @Column(nullable = false)
     private Instant updatedAt;
 
+    @Column(columnDefinition = "text")
+    private String providerDisputeReference;
+
+    @Column(columnDefinition = "text")
+    private String customerClaim;
+
+    private Instant responseDueAt;
+
     public Dispute(String transactionReference, Long amountMinor, String currency, String description) {
         this.id = UUID.randomUUID();
         this.transactionReference = transactionReference;
@@ -69,6 +77,22 @@ public class Dispute {
         }
         if (description != null) {
             this.description = description;
+        }
+    }
+
+    // Shared by create (where an omitted field simply stays null) and update (where it
+    // must stay whatever it already was) - both are "if supplied, set" against a target
+    // that starts out null for a fresh dispute, so one method covers both call sites.
+    public void recordProviderCaseDetails(String providerDisputeReference, String customerClaim,
+            Instant responseDueAt) {
+        if (providerDisputeReference != null) {
+            this.providerDisputeReference = providerDisputeReference;
+        }
+        if (customerClaim != null) {
+            this.customerClaim = customerClaim;
+        }
+        if (responseDueAt != null) {
+            this.responseDueAt = responseDueAt;
         }
     }
 }

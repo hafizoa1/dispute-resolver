@@ -195,6 +195,39 @@ class ReviewControllerIntegrationTests {
         assertThat(response.statusCode()).isEqualTo(404);
     }
 
+    @Test
+    void draftIncludesCustomerClaimAndResponseDeadlineWhenRecorded() throws Exception {
+        Dispute dispute = createDispute("review-test-claim-ref");
+        dispute.recordProviderCaseDetails("MPT-CASE-REVIEW-1", "Customer says the meal never arrived.",
+                Instant.parse("2026-11-20T00:00:00Z"));
+        dispute = disputeRepository.saveAndFlush(dispute);
+        insertEvent("review-test-claim-1", dispute.getTransactionReference(), "booking-1", 5000);
+
+        JsonNode body = getReview(dispute.getId());
+
+        assertThat(body.get("dispute").get("customerClaim").asString())
+                .isEqualTo("Customer says the meal never arrived.");
+        assertThat(body.get("dispute").get("responseDueAt").asString())
+                .isEqualTo(Instant.parse("2026-11-20T00:00:00Z").toString());
+        String draftText = body.get("draftText").asString();
+        assertThat(draftText).contains("Customer claim: \"Customer says the meal never arrived.\"");
+        assertThat(draftText).contains("Response due: " + Instant.parse("2026-11-20T00:00:00Z"));
+    }
+
+    @Test
+    void draftLabelsCustomerClaimAndResponseDeadlineAsUnavailableWhenMissing() throws Exception {
+        Dispute dispute = createDispute("review-test-no-claim-ref");
+        insertEvent("review-test-no-claim-1", dispute.getTransactionReference(), "booking-1", 5000);
+
+        JsonNode body = getReview(dispute.getId());
+
+        assertThat(body.get("dispute").get("customerClaim").isNull()).isTrue();
+        assertThat(body.get("dispute").get("responseDueAt").isNull()).isTrue();
+        String draftText = body.get("draftText").asString();
+        assertThat(draftText).contains("Customer claim: not recorded.");
+        assertThat(draftText).contains("Response due: not recorded - no deadline has been supplied by the provider.");
+    }
+
     private Dispute createDispute(String transactionReference) {
         return disputeRepository.saveAndFlush(
                 new Dispute(transactionReference, 5000L, "NGN", "integration test fixture"));

@@ -25,6 +25,8 @@ public class DisputeService {
     public DisputeResponse create(CreateDisputeRequest request) {
         Dispute dispute = new Dispute(request.transactionReference(), request.amountMinor(), request.currency(),
                 request.description());
+        dispute.recordProviderCaseDetails(request.providerDisputeReference(), request.customerClaim(),
+                request.responseDueAt());
         return DisputeResponse.from(disputeRepository.saveAndFlush(dispute));
     }
 
@@ -44,6 +46,8 @@ public class DisputeService {
         Dispute dispute = findDispute(id);
         dispute.correctDetails(request.transactionReference(), request.amountMinor(), request.currency(),
                 request.description());
+        dispute.recordProviderCaseDetails(request.providerDisputeReference(), request.customerClaim(),
+                request.responseDueAt());
         return DisputeResponse.from(disputeRepository.saveAndFlush(dispute));
     }
 
