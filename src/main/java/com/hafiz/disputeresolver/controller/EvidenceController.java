@@ -3,13 +3,17 @@ package com.hafiz.disputeresolver.controller;
 import java.util.List;
 import java.util.UUID;
 
+import com.hafiz.disputeresolver.dto.EvidenceFile;
 import com.hafiz.disputeresolver.dto.EvidenceResponse;
 import com.hafiz.disputeresolver.dto.SaveObservationRequest;
 import com.hafiz.disputeresolver.service.EvidenceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,5 +48,14 @@ public class EvidenceController {
     public EvidenceResponse saveObservation(@PathVariable UUID disputeId, @PathVariable UUID evidenceId,
             @Valid @RequestBody SaveObservationRequest request) {
         return evidenceService.saveObservation(disputeId, evidenceId, request);
+    }
+
+    @GetMapping("/{evidenceId}/file")
+    public ResponseEntity<Resource> getFile(@PathVariable UUID disputeId, @PathVariable UUID evidenceId) {
+        EvidenceFile file = evidenceService.getFile(disputeId, evidenceId);
+        return ResponseEntity.ok()
+                .contentType(file.mediaType())
+                .header(HttpHeaders.CONTENT_DISPOSITION, file.contentDisposition().toString())
+                .body(file.resource());
     }
 }
