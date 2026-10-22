@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-5.0.xsd">
+
+    <!-- No foreign key to disputes: this is a frozen historical record, not a live
+         relation, and must stay exactly as approved even if the dispute row it
+         names is later changed. -->
+    <changeSet id="007-create-defence-approvals" author="hafiz">
+        <createTable tableName="defence_approvals">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="dispute_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="fingerprint" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="snapshot_json" type="TEXT">
+                <constraints nullable="false"/>
+            </column>
+            <column name="approved_at" type="TIMESTAMP WITH TIME ZONE">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_defence_approvals_dispute_id" tableName="defence_approvals">
+            <column name="dispute_id"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

@@ -80,15 +80,7 @@ public class EvidenceService {
 
     public EvidenceFile getFile(UUID disputeId, UUID evidenceId) {
         Evidence evidence = findEvidenceForDispute(disputeId, evidenceId);
-
-        // Located by the stored dispute/evidence ids, never the original filename -
-        // same reasoning as upload(): the id is what's trustworthy, the filename isn't.
-        Path filePath = uploadDir.resolve(disputeId.toString()).resolve(evidenceId.toString());
-        if (!Files.isRegularFile(filePath)) {
-            // The DB row exists but the file on disk doesn't - same 404 as a row that
-            // doesn't exist at all, per the "reuse the existing pattern" instruction.
-            throw new EvidenceNotFoundException(evidenceId);
-        }
+        Path filePath = resolveExistingFilePath(disputeId, evidenceId);
 
         boolean previewable = evidence.getContentType() != null
                 && PREVIEWABLE_CONTENT_TYPES.contains(evidence.getContentType().toLowerCase(Locale.ROOT));
@@ -102,6 +94,30 @@ public class EvidenceService {
                 .build();
 
         return new EvidenceFile(new FileSystemResource(filePath), mediaType, contentDisposition);
+    }
+
+    // Used by anything that needs the file's raw bytes rather than an HTTP-ready
+    // Resource (e.g. building a defence preview) - same lookup and 404 behaviour as
+    // getFile(), just returning bytes directly instead of a Resource/ContentDisposition.
+    public byte[] readAttachmentBytes(UUID disputeId, UUID evidenceId) {
+        findEvidenceForDispute(disputeId, evidenceId);
+        Path filePath = resolveExistingFilePath(disputeId, evidenceId);
+        try {
+            return Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Failed to read evidence file", e);
+        }
+    }
+
+    // Located by the stored dispute/evidence ids, never the original filename - the id
+    // is what's trustworthy, the filename isn't. The DB row existing but the file on
+    // disk not is the same 404 as a row that doesn't exist at all.
+    private Path resolveExistingFilePath(UUID disputeId, UUID evidenceId) {
+        Path filePath = uploadDir.resolve(disputeId.toString()).resolve(evidenceId.toString());
+        if (!Files.isRegularFile(filePath)) {
+            throw new EvidenceNotFoundException(evidenceId);
+        }
+        return filePath;
     }
 
     // "Belongs to a different dispute" and "doesn't exist" collapse into the same

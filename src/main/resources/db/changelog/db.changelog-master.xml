@@ -11,5 +11,6 @@
     <include file="db/changelog/004-add-evidence-observation.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/005-add-dispute-provider-case-details.xml" relativeToChangelogFile="false"/>
     <include file="db/changelog/006-add-dispute-defence-text.xml" relativeToChangelogFile="false"/>
+    <include file="db/changelog/007-create-defence-approvals.xml" relativeToChangelogFile="false"/>
 
 </databaseChangeLog>

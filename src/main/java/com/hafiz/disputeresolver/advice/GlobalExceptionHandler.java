@@ -3,6 +3,9 @@ package com.hafiz.disputeresolver.advice;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import com.hafiz.disputeresolver.exception.DefenceApprovalNotFoundException;
+import com.hafiz.disputeresolver.exception.DefenceContentChangedException;
+import com.hafiz.disputeresolver.exception.DefenceNotSavedException;
 import com.hafiz.disputeresolver.exception.DisputeNotFoundException;
 import com.hafiz.disputeresolver.exception.EvidenceNotFoundException;
 import com.hafiz.disputeresolver.moniepoint.WebhookException;
@@ -42,6 +45,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ProblemDetail handleEvidenceNotFound(EvidenceNotFoundException ex) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
         problem.setTitle("Evidence not found");
+        return problem;
+    }
+
+    @ExceptionHandler(DefenceNotSavedException.class)
+    public ProblemDetail handleDefenceNotSaved(DefenceNotSavedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+        problem.setTitle("Defence not saved");
+        return problem;
+    }
+
+    @ExceptionHandler(DefenceContentChangedException.class)
+    public ProblemDetail handleDefenceContentChanged(DefenceContentChangedException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+        problem.setTitle("Defence content changed");
+        return problem;
+    }
+
+    @ExceptionHandler(DefenceApprovalNotFoundException.class)
+    public ProblemDetail handleDefenceApprovalNotFound(DefenceApprovalNotFoundException ex) {
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
+        problem.setTitle("Defence approval not found");
         return problem;
     }
 
