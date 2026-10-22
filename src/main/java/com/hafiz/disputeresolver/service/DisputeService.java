@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.hafiz.disputeresolver.dto.CreateDisputeRequest;
 import com.hafiz.disputeresolver.dto.DisputeResponse;
+import com.hafiz.disputeresolver.dto.SaveDefenceRequest;
 import com.hafiz.disputeresolver.dto.UpdateDisputeRequest;
 import com.hafiz.disputeresolver.exception.DisputeNotFoundException;
 import com.hafiz.disputeresolver.model.Dispute;
@@ -48,6 +49,13 @@ public class DisputeService {
                 request.description());
         dispute.recordProviderCaseDetails(request.providerDisputeReference(), request.customerClaim(),
                 request.responseDueAt());
+        return DisputeResponse.from(disputeRepository.saveAndFlush(dispute));
+    }
+
+    @Transactional
+    public DisputeResponse saveDefence(UUID id, SaveDefenceRequest request) {
+        Dispute dispute = findDispute(id);
+        dispute.recordDefenceText(request.defenceText());
         return DisputeResponse.from(disputeRepository.saveAndFlush(dispute));
     }
 

@@ -189,6 +189,65 @@ class DisputeControllerIntegrationTests {
         assertThat(updated.get("responseDueAt").isNull()).isTrue();
     }
 
+    @Test
+    void existingDisputeReturnsNullDefenceTextUntilOneIsSaved() throws Exception {
+        JsonNode created = create("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture"}
+                """.formatted(newReference()));
+
+        assertThat(created.get("defenceText").isNull()).isTrue();
+        assertThat(getById(idOf(created)).get("defenceText").isNull()).isTrue();
+    }
+
+    @Test
+    void savingDefenceTextPersistsAndReturnsItThroughASeparateGet() throws Exception {
+        UUID id = idOf(create("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture"}
+                """.formatted(newReference())));
+        String defenceText = "We contest this chargeback because the meal was provided. "
+                + "See evidence [evidence 11111111-1111-1111-1111-111111111111].";
+
+        JsonNode saved = saveDefence(id, defenceText);
+
+        assertThat(saved.get("defenceText").asString()).isEqualTo(defenceText);
+        assertThat(getById(id).get("defenceText").asString()).isEqualTo(defenceText);
+    }
+
+    @Test
+    void overwritingDefenceTextReplacesThePrevious() throws Exception {
+        UUID id = idOf(create("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture"}
+                """.formatted(newReference())));
+        saveDefence(id, "First draft of the defence.");
+
+        JsonNode saved = saveDefence(id, "Revised draft of the defence.");
+
+        assertThat(saved.get("defenceText").asString()).isEqualTo("Revised draft of the defence.");
+        assertThat(getById(id).get("defenceText").asString()).isEqualTo("Revised draft of the defence.");
+    }
+
+    @Test
+    void blankDefenceTextIsRejected() throws Exception {
+        UUID id = idOf(create("""
+                {"transactionReference": "%s", "amountMinor": 5000, "currency": "NGN",
+                 "description": "integration test fixture"}
+                """.formatted(newReference())));
+
+        HttpResponse<String> response = send(putDefenceRequest(id, "   "));
+
+        assertThat(response.statusCode()).isEqualTo(400);
+    }
+
+    @Test
+    void savingDefenceOnNonexistentDisputeReturns404() throws Exception {
+        HttpResponse<String> response = send(putDefenceRequest(UUID.randomUUID(), "We contest this chargeback."));
+
+        assertThat(response.statusCode()).isEqualTo(404);
+    }
+
     private String newReference() {
         return "dispute-test-ref-" + UUID.randomUUID();
     }
@@ -233,5 +292,25 @@ class DisputeControllerIntegrationTests {
 
     private HttpResponse<String> send(HttpRequest request) throws Exception {
         return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
+    private JsonNode saveDefence(UUID id, String defenceText) throws Exception {
+        HttpResponse<String> response = send(putDefenceRequest(id, defenceText));
+        assertThat(response.statusCode()).isEqualTo(200);
+        return mapper.readTree(response.body());
+    }
+
+    private HttpRequest putDefenceRequest(UUID id, String defenceText) {
+        String json = """
+                {"defenceText": %s}
+                """.formatted(quote(defenceText));
+        return HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/disputes/" + id + "/defence"))
+                .header("Content-Type", "application/json")
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(json.getBytes(StandardCharsets.UTF_8)))
+                .build();
+    }
+
+    private String quote(String value) {
+        return "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
     }
 }

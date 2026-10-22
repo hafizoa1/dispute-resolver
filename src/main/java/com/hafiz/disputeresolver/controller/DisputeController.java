@@ -6,6 +6,7 @@ import java.util.UUID;
 
 import com.hafiz.disputeresolver.dto.CreateDisputeRequest;
 import com.hafiz.disputeresolver.dto.DisputeResponse;
+import com.hafiz.disputeresolver.dto.SaveDefenceRequest;
 import com.hafiz.disputeresolver.dto.UpdateDisputeRequest;
 import com.hafiz.disputeresolver.model.DisputeStatus;
 import com.hafiz.disputeresolver.service.DisputeService;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -47,5 +49,10 @@ public class DisputeController {
     @PatchMapping("/{id}")
     public DisputeResponse update(@PathVariable UUID id, @Valid @RequestBody UpdateDisputeRequest request) {
         return disputeService.update(id, request);
+    }
+
+    @PutMapping("/{id}/defence")
+    public DisputeResponse saveDefence(@PathVariable UUID id, @Valid @RequestBody SaveDefenceRequest request) {
+        return disputeService.saveDefence(id, request);
     }
 }

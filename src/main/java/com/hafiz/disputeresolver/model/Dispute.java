@@ -56,6 +56,11 @@ public class Dispute {
 
     private Instant responseDueAt;
 
+    // The merchant's own free-text defence, saved verbatim - never generated or
+    // rewritten here. Nullable: a dispute has none until the merchant saves one.
+    @Column(columnDefinition = "text")
+    private String defenceText;
+
     public Dispute(String transactionReference, Long amountMinor, String currency, String description) {
         this.id = UUID.randomUUID();
         this.transactionReference = transactionReference;
@@ -94,5 +99,11 @@ public class Dispute {
         if (responseDueAt != null) {
             this.responseDueAt = responseDueAt;
         }
+    }
+
+    // Dedicated save action, not a partial update - the merchant always sends the
+    // full text, and resaving simply overwrites whatever draft was there before.
+    public void recordDefenceText(String defenceText) {
+        this.defenceText = defenceText;
     }
 }
