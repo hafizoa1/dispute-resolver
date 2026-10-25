@@ -1,5 +1,7 @@
 package com.hafiz.disputeresolver.service;
 
+import com.hafiz.disputeresolver.assessment.ServiceNotReceivedAssessment;
+import com.hafiz.disputeresolver.dto.ServiceAssessmentResponse;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,6 +51,15 @@ public class ReviewService {
 
         return new ReviewResponse(caseResponse.dispute(), caseResponse.paymentEvents(),
                 caseResponse.paymentEventConflict(), citations, gaps, SCOPE_DISCLAIMER, draftText);
+    }
+
+    // Uses the same case lookup, citations, reference checks and gaps as GET /review.
+    // Interpretations are supplied for this request only; nothing is persisted or approved.
+    public ServiceAssessmentResponse assessServiceNotReceived(
+            UUID disputeId, ServiceNotReceivedAssessment.Request request) {
+        ReviewResponse review = getReview(disputeId);
+        return new ServiceAssessmentResponse(review, new ServiceNotReceivedAssessment()
+                .assess(review.evidenceCitations(), review.paymentEventConflict(), request));
     }
 
     private EvidenceCitation toCitation(EvidenceResponse evidence, String disputeTransactionReference) {

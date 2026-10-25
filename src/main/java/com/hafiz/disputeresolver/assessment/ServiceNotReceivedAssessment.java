@@ -1,169 +1,113 @@
 package com.hafiz.disputeresolver.assessment;
 
+import com.hafiz.disputeresolver.dto.EvidenceCitation;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-/**
- * Experimental preparation policy, not Mastercard adjudication or submission readiness.
- * Observations are manually reviewed interpretations, not upload categories or NLP output.
- * The caller supplies case-scoped payment IDs; CaseService remains responsible for history.
- */
+/** A fixed service-not-received preparation experiment, not a network decision engine. */
 public final class ServiceNotReceivedAssessment {
-    public static final String PROFILE = "prototype-service-not-received-v1";
-    public static final String LIMITATION = "Experimental profile based on the Mastercard Merchant Edition "
-            + "of 13 May 2025, pp. 153-154. Applicable current route is not confirmed. "
-            + "Recorded accounts do not verify delivery, identity or authenticity. Submission readiness is not assessed.";
+    public enum Claim { SERVICE_PROVIDED, CARDHOLDER_RECEIVED_SERVICE }
+    public enum Relation { SUPPORTS, CONTRADICTS }
 
-    public enum Kind { BILLING_ACCOUNT, RECORDED_SERVICE_ACCOUNT, CORRESPONDENCE }
-    public enum DeliveryBasis { RECORD_ACCOUNT_AVAILABLE, MERCHANT_ASSERTION_ONLY,
-        NO_SERVICE_ACCOUNT_SUPPLIED, CHALLENGED }
-
-    public record Observation(Kind kind, String sourceQuote, String declaredTransactionReference,
-            String unresolvedChallenge) {
-        public Observation {
-            Objects.requireNonNull(kind, "kind");
-            requireText(sourceQuote, "sourceQuote");
+    /** Passage is quoted from the saved merchant observation, NOT extracted from a file.
+     * linkageExplanation is a reviewer's asserted connection, not verified identity. */
+    public record Interpretation(UUID evidenceId, Claim claim, Relation relation, String passage,
+            String linkageExplanation, String unresolvedQuestion) {
+        public Interpretation {
+            Objects.requireNonNull(evidenceId, "evidenceId");
+            Objects.requireNonNull(claim, "claim");
+            Objects.requireNonNull(relation, "relation");
+            requireText(passage, "passage");
         }
     }
+    public record Request(List<Interpretation> interpretations) {
+        public Request { interpretations = List.copyOf(interpretations); }
+    }
+    /** Named rule application: premises are asserted inputs, blockers prevent reliance.
+     * This is a bounded defeasible rule, not an implementation of ASPIC+ semantics. */
+    public record Inference(String ruleId, List<String> premises, List<String> blockers) { }
+    public record Passage(EvidenceCitation citation, String quotedObservation,
+            String reviewerLinkageExplanation, String unresolvedQuestion, Inference inference) { }
+    public record ClaimAssessment(Claim claim, List<Passage> supportingPassages,
+            List<Passage> conflictingPassages, List<Passage> unresolvedPassages,
+            List<String> questions) { }
+    public record Result(List<ClaimAssessment> claims, String scopeDisclaimer) { }
 
-    public record Evidence(String id, String originalText, List<Observation> observations) {
-        public Evidence {
-            requireText(id, "evidence id");
-            Objects.requireNonNull(originalText, "originalText");
-            observations = List.copyOf(observations);
-            for (Observation observation : observations) {
-                if (!originalText.contains(observation.sourceQuote())) {
-                    throw new IllegalArgumentException("Source quotation not present in evidence " + id);
-                }
+    public Result assess(List<EvidenceCitation> citations, boolean paymentEventConflict, Request request) {
+        citations = List.copyOf(citations);
+        Objects.requireNonNull(request, "request");
+        // Resolve only against the existing case-scoped citations. Do not read files,
+        // perform another reference comparison, or infer meaning from filename/type.
+        for (Interpretation interpretation : request.interpretations()) {
+            EvidenceCitation citation = citation(citations, interpretation.evidenceId());
+            if (citation.observationText() == null
+                    || !citation.observationText().contains(interpretation.passage())) {
+                throw new IllegalArgumentException("Passage must occur verbatim in the saved merchant observation: "
+                        + interpretation.evidenceId());
             }
         }
-    }
-
-    public record Input(String transactionReference, List<String> paymentEventIds,
-            boolean paymentEventConflict, String merchantExplanation, List<Evidence> evidence) {
-        public Input {
-            requireText(transactionReference, "transactionReference");
-            paymentEventIds = List.copyOf(paymentEventIds);
-            paymentEventIds.forEach(id -> requireText(id, "payment event id"));
-            evidence = List.copyOf(evidence);
-        }
-    }
-
-    public record Statement(String recordId, String text) { }
-    public record Finding(String code, String recordId, String message) { }
-    public record Result(String profile, DeliveryBasis deliveryBasis, List<String> paymentEventIds,
-            List<Statement> draftStatements, List<Statement> candidateContext,
-            List<Finding> findings, String limitation) {
-        public Result {
-            paymentEventIds = List.copyOf(paymentEventIds);
-            draftStatements = List.copyOf(draftStatements);
-            candidateContext = List.copyOf(candidateContext);
-            findings = List.copyOf(findings);
-        }
-    }
-
-    public Result assess(Input input) {
-        Objects.requireNonNull(input, "input");
-        List<Statement> draft = new ArrayList<>();
-        List<Statement> context = new ArrayList<>();
-        List<Finding> findings = new ArrayList<>();
-        boolean serviceAccount = false;
-        boolean challenged = false;
-
-        if (input.paymentEventIds().isEmpty()) {
-            findings.add(new Finding("NO_PAYMENT_EVENT", null,
-                    "No matching provider event supplied; this is a payment-context gap, not evidence of non-delivery."));
-        } else {
-            for (String id : input.paymentEventIds()) {
-                draft.add(new Statement(id, "The supplied provider history contains an event for reference "
-                        + input.transactionReference() + "."));
-            }
-        }
-        if (input.paymentEventConflict()) {
-            findings.add(new Finding("PAYMENT_CONFLICT", null,
-                    "The case view reports conflicting payment identities; resolve before relying on that identity."));
-        }
-        boolean merchantAccount = known(input.merchantExplanation());
-        if (merchantAccount) {
-            draft.add(new Statement("merchant-explanation", "Merchant states: \""
-                    + input.merchantExplanation() + "\""));
-        }
-
-        // Duplicate uploads of the same record cannot add support or repeat draft statements.
-        var unique = new LinkedHashMap<String, Evidence>();
-        for (Evidence evidence : input.evidence()) {
-            Evidence previous = unique.putIfAbsent(evidence.id(), evidence);
-            if (previous != null && !previous.equals(evidence)) {
-                throw new IllegalArgumentException("Conflicting evidence versions for id " + evidence.id());
-            }
-        }
-
-        for (Evidence evidence : unique.values()) {
-            if (evidence.observations().isEmpty()) {
-                findings.add(new Finding("NEEDS_CONTENT_REVIEW", evidence.id(),
-                        "Attachment supplied without a reviewed interpretation; its presence adds no delivery conclusion."));
-            }
-            for (Observation observation : evidence.observations().stream().distinct().toList()) {
-                boolean referenceKnown = known(observation.declaredTransactionReference());
-                boolean referenceMatches = referenceKnown
-                        && input.transactionReference().equals(observation.declaredTransactionReference());
-                String quoted = "Supplied record states: \"" + observation.sourceQuote() + "\"";
-
-                if (observation.kind() == Kind.CORRESPONDENCE) {
-                    context.add(new Statement(evidence.id(), quoted));
-                    findings.add(new Finding("CORRESPONDENCE_LINK_UNESTABLISHED", evidence.id(),
-                            "Connect the sender and visit/payment before treating this as a cardholder acknowledgment. "
-                            + "A declared reference alone does not establish the sender's identity."));
-                    if (known(observation.unresolvedChallenge())) {
-                        findings.add(new Finding("CONTEXT_CHALLENGE", evidence.id(), observation.unresolvedChallenge()));
-                    }
-                    continue;
+        List<ClaimAssessment> claims = new ArrayList<>();
+        for (Claim claim : Claim.values()) {
+            List<Passage> support = new ArrayList<>();
+            List<Passage> conflicts = new ArrayList<>();
+            List<Passage> unresolved = new ArrayList<>();
+            var questions = new LinkedHashSet<String>();
+            for (Interpretation interpretation : new LinkedHashSet<>(request.interpretations())) {
+                if (interpretation.claim() != claim) continue;
+                EvidenceCitation citation = citation(citations, interpretation.evidenceId());
+                List<String> premises = new ArrayList<>();
+                List<String> blockers = new ArrayList<>();
+                premises.add("Reviewer interprets the cited merchant-observation passage as "
+                        + interpretation.relation() + " " + claim);
+                boolean linked = Boolean.TRUE.equals(citation.referenceMatches());
+                if (linked) premises.add("Existing review reports a declared transaction-reference match (not verified linkage).");
+                else blockers.add("Establish the transaction connection for evidence " + citation.evidenceId());
+                if (claim == Claim.CARDHOLDER_RECEIVED_SERVICE && !known(interpretation.linkageExplanation())) {
+                    blockers.add("Explain the connection to the cardholder and disputed visit for evidence "
+                            + citation.evidenceId());
                 }
-                if (!referenceMatches) {
-                    context.add(new Statement(evidence.id(), quoted));
-                    findings.add(new Finding(referenceKnown ? "REFERENCE_MISMATCH" : "REFERENCE_UNKNOWN",
-                            evidence.id(), "Establish which booking/payment this record concerns; do not assume relevance."));
-                    continue;
+                if (claim == Claim.CARDHOLDER_RECEIVED_SERVICE && known(interpretation.linkageExplanation())) {
+                    premises.add("Reviewer asserts cardholder/visit linkage: " + interpretation.linkageExplanation());
                 }
-                if (known(observation.unresolvedChallenge())) {
-                    context.add(new Statement(evidence.id(), quoted));
-                    findings.add(new Finding("UNRESOLVED_CHALLENGE", evidence.id(), observation.unresolvedChallenge()));
-                    if (observation.kind() == Kind.RECORDED_SERVICE_ACCOUNT) {
-                        challenged = true;
-                    }
-                    continue;
-                }
-                String attribution = observation.kind() == Kind.BILLING_ACCOUNT
-                        ? "Merchant billing record states: \"" : "Merchant service record states: \"";
-                draft.add(new Statement(evidence.id(), attribution + observation.sourceQuote() + "\""));
-                if (observation.kind() == Kind.RECORDED_SERVICE_ACCOUNT) {
-                    serviceAccount = true;
+                if (known(interpretation.unresolvedQuestion())) blockers.add(interpretation.unresolvedQuestion());
+                if (paymentEventConflict) blockers.add("Payment identity is conflicting in the existing review.");
+                questions.addAll(blockers);
+                Passage passage = new Passage(citation, interpretation.passage(),
+                        interpretation.linkageExplanation(), interpretation.unresolvedQuestion(),
+                        new Inference(claim == Claim.SERVICE_PROVIDED ? "SERVICE_ACCOUNT_V1" : "RECEIPT_ACCOUNT_V1",
+                                List.copyOf(premises), List.copyOf(blockers)));
+                // Conflicting accounts stay visible even if their relevance is unresolved.
+                if (interpretation.relation() == Relation.CONTRADICTS) {
+                    conflicts.add(passage);
+                } else if (!blockers.isEmpty()) {
+                    unresolved.add(passage);
+                } else {
+                    support.add(passage);
                 }
             }
+            if (support.isEmpty()) questions.add("No linked, unchallenged supporting passage identified for " + claim
+                    + ". This does not establish non-delivery.");
+            if (!conflicts.isEmpty()) questions.add("Review the conflicting accounts and their relevance before relying on this claim.");
+            if (paymentEventConflict) questions.add("Resolve the payment-identity conflict; the complete history remains in review.");
+            claims.add(new ClaimAssessment(claim, List.copyOf(support), List.copyOf(conflicts),
+                    List.copyOf(unresolved), List.copyOf(questions)));
         }
-
-        DeliveryBasis basis = challenged ? DeliveryBasis.CHALLENGED
-                : serviceAccount ? DeliveryBasis.RECORD_ACCOUNT_AVAILABLE
-                : merchantAccount ? DeliveryBasis.MERCHANT_ASSERTION_ONLY
-                : DeliveryBasis.NO_SERVICE_ACCOUNT_SUPPLIED;
-        if (!serviceAccount) {
-            findings.add(new Finding("NO_UNCHALLENGED_SERVICE_RECORD", null,
-                    "No unchallenged, reference-matched documentary service account identified. "
-                    + "Ask for existing service records or communications; accept that none may be available. "
-                    + "Absence does not establish non-delivery."));
-        }
-        return new Result(PROFILE, basis, input.paymentEventIds(), draft, context, findings, LIMITATION);
+        return new Result(List.copyOf(claims),
+                "Experimental service-not-received assessment of human interpretations of saved merchant observations. "
+                + "Supporting passages remain attributed merchant assertions, not verified file contents or facts. "
+                + "Reference matches and reviewer linkage explanations do not authenticate records or identity. "
+                + "No document-type ranking, win score, current Mastercard compliance or submission readiness is assessed. "
+                + "The existing review draft is unchanged; conflicts and questions must be read alongside support.");
     }
-
-    private static boolean known(String value) {
-        return value != null && !value.isBlank();
+    private static EvidenceCitation citation(List<EvidenceCitation> citations, UUID id) {
+        return citations.stream().filter(c -> c.evidenceId().equals(id)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("Evidence is not in this dispute: " + id));
     }
-
+    private static boolean known(String value) { return value != null && !value.isBlank(); }
     private static void requireText(String value, String name) {
-        if (!known(value)) {
-            throw new IllegalArgumentException(name + " must not be blank");
-        }
+        if (!known(value)) throw new IllegalArgumentException(name + " must not be blank");
     }
 }

@@ -34,7 +34,5 @@ jobs:
           distribution: temurin
           java-version: '17'
           cache: maven
-      - name: Run restaurant assessment experiment
-        run: bash scripts/run_restaurant_assessment.sh
       - name: Run tests against PostgreSQL
         run: ./mvnw --batch-mode test

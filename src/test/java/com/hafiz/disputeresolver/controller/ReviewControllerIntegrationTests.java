@@ -228,6 +228,49 @@ class ReviewControllerIntegrationTests {
         assertThat(draftText).contains("Response due: not recorded - no deadline has been supplied by the provider.");
     }
 
+    @Test
+    void assessmentReusesReviewAndDoesNotChangeStoredObservationOrDraft() throws Exception {
+        Dispute dispute = createDispute("review-test-assessment-ref");
+        insertEvent("review-test-assessment-1", dispute.getTransactionReference(), "booking-1", 5000);
+        Evidence evidence = createObservedEvidence(dispute, "message.txt", "Customer states dinner was served.",
+                dispute.getTransactionReference());
+        JsonNode before = getReview(dispute.getId());
+        String body = """
+                {"interpretations":[{"evidenceId":"%s","claim":"SERVICE_PROVIDED",
+                "relation":"SUPPORTS","passage":"dinner was served."}]}
+                """.formatted(evidence.getId());
+        HttpResponse<String> response = assess(dispute.getId(), body);
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode result = mapper.readTree(response.body());
+        assertThat(result.get("review")).isEqualTo(before);
+        JsonNode support = result.get("assessment").get("claims").get(0).get("supportingPassages");
+        assertThat(support).hasSize(1);
+        assertThat(support.get(0).get("citation").get("evidenceId").asString()).isEqualTo(evidence.getId().toString());
+        assertThat(support.get(0).get("inference").get("ruleId").asString()).isEqualTo("SERVICE_ACCOUNT_V1");
+        assertThat(getReview(dispute.getId())).isEqualTo(before);
+    }
+
+    @Test
+    void assessmentRejectsUnknownEvidenceAndInventedPassage() throws Exception {
+        Dispute dispute = createDispute("review-test-assessment-invalid-ref");
+        Evidence evidence = createObservedEvidence(dispute, "record.txt", "Recorded passage.", dispute.getTransactionReference());
+        String template = """
+                {"interpretations":[{"evidenceId":"%s","claim":"SERVICE_PROVIDED",
+                "relation":"SUPPORTS","passage":"Invented passage."}]}
+                """;
+        assertThat(assess(dispute.getId(), template.formatted(UUID.randomUUID())).statusCode()).isEqualTo(400);
+        assertThat(assess(dispute.getId(), template.formatted(evidence.getId())).statusCode()).isEqualTo(400);
+        assertThat(assess(dispute.getId(), "{}").statusCode()).isEqualTo(400);
+    }
+
+    private HttpResponse<String> assess(UUID disputeId, String body) throws Exception {
+        HttpRequest request = HttpRequest.newBuilder(URI.create("http://localhost:" + port
+                        + "/api/disputes/" + disputeId + "/review/service-not-received-assessment"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body)).build();
+        return client.send(request, HttpResponse.BodyHandlers.ofString());
+    }
+
     private Dispute createDispute(String transactionReference) {
         return disputeRepository.saveAndFlush(
                 new Dispute(transactionReference, 5000L, "NGN", "integration test fixture"));

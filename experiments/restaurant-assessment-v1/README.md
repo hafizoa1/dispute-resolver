@@ -1,85 +1,133 @@
-# Restaurant assessment experiment v1
+# Claim assessment experiment
 
-Run from the repository root with Java 17:
+This revision replaces the original document-kind and delivery-basis classifier.
+It extends the existing review instead of duplicating its quotation/reference/gap logic.
+No migration, new persistence, provider request, approval change or automatic submission.
+
+## Run and read
+
+Requires Java 17; no Spring context or PostgreSQL for the executable examples:
 
 ```sh
 bash scripts/run_restaurant_assessment.sh
 ```
 
-This is a pure Java preparation evaluator with an executable experiment. It has no
-HTTP endpoint, schema migration, Spring context or provider call. It is not connected
-to the existing review endpoint yet. The experiment uses the existing fictional
-restaurant text files and a synthetic payment-event label P0.
+Read in order:
 
-## Frozen scenario and manual expectations
+1. `src/main/java/com/hafiz/disputeresolver/assessment/ServiceNotReceivedAssessment.java`
+2. `src/test/java/com/hafiz/disputeresolver/assessment/ServiceNotReceivedAssessmentExamples.java`
+3. `ReviewService.assessServiceNotReceived` and `ReviewController.assess`.
 
-The same fictional restaurant and transaction RST-20261015-0077 are used throughout.
-The fixed allegation is: “I paid for dinner but received no food or service.”
-The evaluator does not interpret or route arbitrary complaint text; the chosen profile
-and the fixed allegation are explicit experimental preconditions.
-The intended cross-border Mastercard dual-message route is a prototype assumption;
-applicable current rules and merchant deadline have not been confirmed.
+The same examples also run through `ServiceNotReceivedAssessmentTests` in the normal
+Maven suite. The previous extra CI experiment step has been removed.
 
-Every variant has the same payment-event reference and the same attributed merchant
-explanation. Extra evidence is removed as a controlled change:
+## API: explicit human interpretations, transient assessment
 
-| Variant | Supplementary records | Manual expected delivery basis |
+```http
+POST /api/disputes/{id}/review/service-not-received-assessment
+Content-Type: application/json
+```
+
+```json
+{
+  "interpretations": [
+    {
+      "evidenceId": "00000000-0000-0000-0000-000000000002",
+      "claim": "SERVICE_PROVIDED",
+      "relation": "SUPPORTS",
+      "passage": "Course 1 served: 20:02",
+      "linkageExplanation": null,
+      "unresolvedQuestion": null
+    }
+  ]
+}
+```
+
+Replace the example evidence ID with an actual attachment ID on that dispute. Its saved
+`observationText` must contain the passage exactly. Existing observation-save endpoints
+and existing declared-reference validation remain the input path. A reviewer explicitly
+chooses the interpretation; there is no content extraction, semantic classification,
+file authentication or automatic Mastercard route selection. Selecting this endpoint
+means explicitly choosing the fixed service-not-received experiment.
+
+The response has:
+
+- `review`: the unchanged output of `ReviewService.getReview`, including the dispute,
+  full payment history/conflict, evidence citations, structural gaps and original draft.
+- `assessment.claims`: fixed claims `SERVICE_PROVIDED` and `CARDHOLDER_RECEIVED_SERVICE`.
+  Each exposes supporting, conflicting and unresolved passages and questions.
+- Each passage retains the original citation and its exact quoted **merchant observation**.
+  It must never be presented as a verified quotation from the uploaded file.
+- Each passage also exposes a named `inference`: rule ID, asserted premises and blockers.
+
+Unknown evidence IDs and quotations absent from the saved observation return 400.
+Missing disputes and unconfigured business settings retain existing review behavior.
+Interpretations and results are not saved. Nothing here is an approved defence or a
+replacement for the existing approval snapshot. The existing draft is not rewritten.
+
+## What the algorithm actually does
+
+There are two fixed defeasible preparation rules, with no document-type precedence:
+
+- `SERVICE_ACCOUNT_V1`: a human says a passage supports/opposes service provision;
+  the existing review supplies its declared transaction-reference connection.
+- `RECEIPT_ACCOUNT_V1`: the same, with an additional human explanation connecting
+  the account to the cardholder and disputed visit.
+
+A support inference with an unknown/mismatched reference, an unresolved question,
+missing required cardholder linkage, or a payment-identity conflict stays unresolved.
+Its blockers become specific review questions. Contradicting accounts remain visible
+with their own linkage limitations; they are not assumed true and do not silently
+wipe out supporting accounts. Both sides require human review.
+
+The engine checks that a quote occurs in the merchant observation, not whether that
+observation faithfully describes an attachment. Likewise a typed linkage explanation
+is an asserted premise, not independently verified identity. A human can supply a
+bad interpretation: this experiment does not detect that semantic error.
+
+No interpretation is created from file presence or filename. A bill without a reviewed
+service-related passage creates no service support. An email can support either claim
+when the same required premises are supplied. Missing support is not non-delivery.
+Duplicate identical interpretations do not add support. Separate copies under different
+IDs are not detected as duplicates; support is not counted into a strength score.
+
+## Relationship to our algorithm research
+
+This implements the first explicit evidence-to-claim rule applications and linkage
+blockers. It is a small custom evaluator inspired by defeasible argument reasoning,
+not an implementation or validation of ASPIC+, Carneades, formal proof standards,
+argumentation acceptance semantics, or Odekerken's stability/relevance algorithms.
+Questions identify missing inputs for these two rules; they are not an optimized next
+question or a formal claim that a result is stable under all future evidence.
+
+A reviewer can inspect why a passage contributed and which challenge blocked it.
+Adding a full framework is deferred until this bounded example demonstrates a need.
+These rules are our experimental preparation policy, not an encoded Mastercard
+acceptance rule. No current scheme/route compliance or recovery likelihood is claimed.
+
+## Manual oracle and limits
+
+Same fictional restaurant, dinner allegation and payment context throughout:
+
+| Evidence available | Human interpretations | Expected result |
 | --- | --- | --- |
-| Extensive | Bill, order record, unlinked message | RECORD_ACCOUNT_AVAILABLE |
-| Moderate | Bill | MERCHANT_ASSERTION_ONLY |
-| Minimal | None | MERCHANT_ASSERTION_ONLY |
+| Bill, service log, message | Log supports provision; message supports receipt but lacks identity linkage | Provision has an attributed account; receipt question stays open |
+| Bill | None asserting service provision | No documentary service-support passage identified |
+| None | None | Same absence of supplementary support; base review still shows payment context |
 
-These expectations were specified before the implementation. The bill records charges;
-it does not trigger a service-performance conclusion. The order record explicitly lists
-service times. The correspondence is candidate context: its author and transaction
-association are unestablished. A documentary account does not verify that delivery
-occurred, and no variant gets a submission-readiness or recovery-probability result.
+The examples copy fictional file text into merchant-observation inputs deliberately.
+That makes them reproducible; it does not establish a file-reading capability. The
+moderate/minimal assessment results are equal while their full reviews would differ.
+The existing review retains merchant observations in all cases; a general merchant
+explanation is not synthesized into verified support.
 
-## Algorithm contract
+Counterexamples cover email support, arbitrary filename changes, wrong/unknown
+references, unresolved challenges, visible support and contradiction together,
+duplicates, payment conflict, unknown evidence, invented quotes and absent observations.
+An opposing synthetic complaint is labeled separately from the real fixture message.
 
-1. Receive case-scoped payment IDs, the existing conflict flag, merchant explanation
-   and evidence with manually reviewed observations.
-2. Check each observation's quotation occurs in its supplied source text. This is an
-   integrity check on the quotation, not verification of its interpretation or truth.
-3. Compare declared references exactly. Missing/blank is unknown; mismatch stays visible.
-4. Attribute billing observations to billing records without inferring service delivery.
-5. An unchallenged, reference-matched reviewed service observation contributes a
-   documentary service account. A declared match is not independently verified linkage.
-6. Keep unverified correspondence and challenged/unmatched records in review context.
-7. Return cited, attributed statements plus gaps, challenges and follow-up requests.
-
-`Kind` selects the meaning of a **manually assessed observation** for this experiment.
-It must not be populated directly from an attachment category or filename. Even a
-copied quotation does not establish authenticity. Observations are intentionally
-trusted human inputs here; automated extraction and reviewer workflow are separate.
-
-The implementation is one fixed prototype policy, not a generic AND/OR graph engine
-or a complete Mastercard rule implementation. Source anchor: Mastercard Chargeback
-Guide, Merchant Edition, 13 May 2025, pp. 153–154:
-https://www.mastercard.us/content/dam/public/mastercardcom/na/global-site/documents/chargeback-guide.pdf
-The guide informs the need to address service provision; these exact labels and checks
-are our policy and require domain review.
-
-## Verification boundaries
-
-The runner checks the three expected results and behavioural counterexamples including
-wrong references, unreviewed uploads, a reviewed contradiction, duplicate records,
-missing payment data, conflicting payment histories and an invented source quotation.
-It deliberately does not use Java's optional `assert` keyword.
-
-Passing demonstrates agreement with the experimental policy. It does not validate
-network acceptance, content extraction, evidence authenticity or live integration.
-Because there is no database work in this slice, the experiment does not require
-Postgres. API/database end-to-end verification is a later integration step.
-
-The repository's existing GitHub Actions workflow also runs this experiment before
-the backend tests. Local verification on 24 October 2026: the standalone Java 17
-experiment passed 30 behavioural checks. Full Maven compilation was attempted but
-could not resolve repo.maven.apache.org in this environment; the complete Spring
-build and PostgreSQL test suite have not been verified here.
-
-Next integration boundary: build this input from CaseService.getCase(id), preserving
-the existing full payment history alongside the assessment, and supply scoped reviewed
-observations. There is no persisted observation-review model or public annotation
-endpoint in this change. The experiment does not modify existing review semantics,
-merchant approval or submission behaviour.
+Verification on 25 October 2026: standalone Java examples pass 29 behavioral checks.
+Maven/Spring/PostgreSQL verification must also run; see the delivery notes for whether
+this environment could fetch the required dependencies. HTTP integration tests cover
+reuse of the complete existing review, no persisted observation/draft changes and
+invalid evidence/quotation requests. Do not read standalone success as HTTP verification.
